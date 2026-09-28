@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Game Mengurutkan Benda</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f9ff;
+    color: #333;
+    text-align: center;
+}
+
+.container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+h1 {
+    color: #2563eb;
+    margin-bottom: 10px;
+}
+
+.petunjuk {
+    font-size: 21px;
+    margin-bottom: 20px;
+}
+
+.info {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.game-area {
+    background: white;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.items {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin: 30px 0;
+}
+
+.item {
+    width: 150px;
+    height: 175px;
+
+    border: 4px solid #dbeafe;
+    border-radius: 18px;
+
+    background: #f8fbff;
+
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    transition: 0.2s;
+
+    user-select: none;
+
+    overflow: hidden;
+}
+
+.item:hover {
+    transform: translateY(-5px);
+    border-color: #60a5fa;
+    background: #eff6ff;
+}
+
+.item.selected {
+    border-color: #22c55e;
+    background: #dcfce7;
+}
+
+.gambar {
+    font-size: 60px;
+
+    /* Agar gambar tidak keluar kotak */
+    max-width: 100%;
+    max-height: 90px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    overflow: hidden;
+
+    line-height: 1.1;
+
+    margin-bottom: 8px;
+}
+
+/* Untuk gambar yang terdiri dari beberapa emoji */
+.gambar.banyak {
+    font-size: 32px;
+    letter-spacing: -4px;
+    max-width: 135px;
+    word-break: break-word;
+}
+
+.nama {
+    font-size: 16px;
+    font-weight: bold;
+    padding: 0 5px;
+}
+
+.urutan {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #16a34a;
+    font-weight: bold;
+}
+
+button {
+    border: none;
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-size: 17px;
+    cursor: pointer;
+    margin: 5px;
+}
+
+#cekBtn {
+    background: #2563eb;
+    color: white;
+}
+
+#cekBtn:hover {
+    background: #1d4ed8;
+}
+
+#ulangBtn {
+    background: #f59e0b;
+    color: white;
+}
+
+#ulangBtn:hover {
+    background: #d97706;
+}
+
+#nextBtn {
+    background: #22c55e;
+    color: white;
+}
+
+#nextBtn:hover {
+    background: #16a34a;
+}
+
+button:disabled {
+    background: #cbd5e1 !important;
+    cursor: not-allowed;
+}
+
+.pesan {
+    min-height: 35px;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 15px;
+}
+
+.benar {
+    color: #16a34a;
+}
+
+.salah {
+    color: #dc2626;
+}
+
+.hasil {
+    margin-top: 15px;
+    font-size: 18px;
+}
+
+@media (max-width: 600px) {
+
+    .item {
+        width: 130px;
+        height: 165px;
+    }
+
+    .gambar {
+        font-size: 50px;
+    }
+
+    .gambar.banyak {
+        font-size: 27px;
+    }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <h1>🎯 Ayo Mengurutkan!</h1>
+
+    <div class="petunjuk" id="petunjuk"></div>
+
+    <div class="info">
+
+        <div>
+            ⭐ Skor:
+            <span id="skor">0</span>
+        </div>
+
+        <div>
+            📚 Soal:
+            <span id="soal">1</span>/5
+        </div>
+
+    </div>
+
+
+    <div class="game-area">
+
+        <p>
+            Klik gambar satu per satu sesuai urutan yang benar.
+        </p>
+
+
+        <div class="items" id="items"></div>
+
+
+        <div class="pesan" id="pesan"></div>
+
+
+        <button id="cekBtn" onclick="cekJawaban()">
+            ✅ Periksa Jawaban
+        </button>
+
+
+        <!-- Tombol ini hanya muncul jika jawaban salah -->
+        <button id="ulangBtn" onclick="ulangPertanyaan()" style="display:none;">
+            🔄 Ulangi Pertanyaan
+        </button>
+
+
+        <!-- Tombol soal berikutnya -->
+        <button id="nextBtn" onclick="soalBerikutnya()" style="display:none;">
+            ➡️ Soal Berikutnya
+        </button>
+
+
+        <div class="hasil" id="hasil"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+
+// ==================================================
+// DATA SOAL
+// ==================================================
+
+const kumpulanSoal = [
+
+    {
+        petunjuk: "Urutkan benda dari kecil ke besar.",
+
+        benda: [
+
+            {
+                nama: "Kelereng",
+                gambar: "🔵",
+                nilai: 1
+            },
+
+            {
+                nama: "Bola",
+                gambar: "⚽",
+                nilai: 3
+            },
+
+            {
+                nama: "Bola besar",
+                gambar: "🏀",
+                nilai: 5
+            },
+
+            {
+                nama: "Bola raksasa",
+                gambar: "🏐",
+                nilai: 7
+            }
+
+        ],
+
+        arah: "kecil"
+    },
+
+
+    {
+        petunjuk: "Urutkan benda dari pendek ke panjang.",
+
+        benda: [
+
+            {
+                nama: "Pensil pendek",
+                gambar: "✏️",
+                nilai: 1
+            },
+
+            {
+                nama: "Pensil",
+                gambar: "🖍️",
+                nilai: 3
+            },
+
+            {
+                nama: "Penggaris",
+                gambar: "📏",
+                nilai: 5
+            },
+
+            {
+                nama: "Tongkat",
+                gambar: "🪄",
+                nilai: 7
+            }
+
+        ],
+
+        arah: "kecil"
+    },
+
+
+    {
+        petunjuk: "Urutkan gambar dari sedikit ke banyak.",
+
+        benda: [
+
+            {
+                nama: "1 apel",
+                gambar: "🍎",
+                nilai: 1
+            },
+
+            {
+                nama: "2 apel",
+                gambar: "🍎🍎",
+                nilai: 2
+            },
+
+            {
+                nama: "3 apel",
+                gambar: "🍎🍎🍎",
+                nilai: 3
+            },
+
+            {
+                nama: "4 apel",
+                gambar: "🍎🍎🍎🍎",
+                nilai: 4
+            }
+
+        ],
+
+        arah: "kecil"
+    },
+
+
+    {
+        petunjuk: "Urutkan buah dari besar ke kecil.",
+
+        benda: [
+
+            {
+                nama: "Semangka",
+                gambar: "🍉",
+                nilai: 7
+            },
+
+            {
+                nama: "Jeruk",
+                gambar: "🍊",
+                nilai: 4
+            },
+
+            {
+                nama: "Strawberry",
+                gambar: "🍓",
+                nilai: 2
+            },
+
+            {
+                nama: "Blueberry",
+                gambar: "🫐",
+                nilai: 1
+            }
+
+        ],
+
+        arah: "besar"
+    },
+
+
+    {
+        petunjuk: "Urutkan tanaman dari kecil ke besar.",
+
+        benda: [
+
+            {
+                nama: "Biji",
+                gambar: "🌱",
+                nilai: 1
+            },
+
+            {
+                nama: "Bunga",
+                gambar: "🌷",
+                nilai: 3
+            },
+
+            {
+                nama: "Pohon kecil",
+                gambar: "🌳",
+                nilai: 5
+            },
+
+            {
+                nama: "Pohon besar",
+                gambar: "🌲",
+                nilai: 7
+            }
+
+        ],
+
+        arah: "kecil"
+    }
+
+];
+
+
+// ==================================================
+// VARIABEL GAME
+// ==================================================
+
+let nomorSoal = 0;
+
+let skor = 0;
+
+let pilihan = [];
+
+let sudahDijawabBenar = false;
+
+
+// ==================================================
+// MENAMPILKAN SOAL
+// ==================================================
+
+function tampilkanSoal() {
+
+    const soalSekarang =
+        kumpulanSoal[nomorSoal];
+
+
+    document.getElementById("petunjuk").innerHTML =
+        soalSekarang.petunjuk;
+
+
+    document.getElementById("soal").innerText =
+        nomorSoal + 1;
+
+
+    document.getElementById("pesan").innerText = "";
+
+    document.getElementById("pesan").className =
+        "pesan";
+
+
+    document.getElementById("hasil").innerText = "";
+
+
+    pilihan = [];
+
+    sudahDijawabBenar = false;
+
+
+    // Sembunyikan tombol
+
+    document.getElementById("ulangBtn").style.display =
+        "none";
+
+    document.getElementById("nextBtn").style.display =
+        "none";
+
+    document.getElementById("cekBtn").style.display =
+        "inline-block";
+
+
+    // ==============================================
+    // ACAK BENDA
+    // ==============================================
+
+    let bendaAcak =
+        [...soalSekarang.benda];
+
+    bendaAcak.sort(
+        () => Math.random() - 0.5
+    );
+
+
+    const container =
+        document.getElementById("items");
+
+    container.innerHTML = "";
+
+
+    // ==============================================
+    // MEMBUAT KARTU BENDA
+    // ==============================================
+
+    bendaAcak.forEach((benda) => {
+
+        const div =
+            document.createElement("div");
+
+        div.className = "item";
+
+
+        // Jika gambar terdiri dari banyak emoji,
+        // gunakan class "banyak"
+
+        let classGambar = "";
+
+        if (benda.gambar.length > 2) {
+
+            classGambar = "banyak";
+
+        }
+
+
+        div.innerHTML = `
+
+            <div class="gambar ${classGambar}">
+                ${benda.gambar}
+            </div>
+
+            <div class="nama">
+                ${benda.nama}
+            </div>
+
+            <div class="urutan"></div>
+
+        `;
+
+
+        // ==========================================
+        // KETIKA GAMBAR DIKLIK
+        // ==========================================
+
+        div.onclick = function() {
+
+            // Jika sudah dipilih,
+            // tidak dapat dipilih lagi
+
+            if (
+                div.classList.contains("selected")
+            ) {
+
+                return;
+
+            }
+
+
+            pilihan.push(benda);
+
+
+            div.classList.add("selected");
+
+
+            div.querySelector(".urutan")
+                .innerText =
+                "Urutan ke-" + pilihan.length;
+
+        };
+
+
+        container.appendChild(div);
+
+    });
+
+}
+
+
+// ==================================================
+// MEMERIKSA JAWABAN
+// ==================================================
+
+function cekJawaban() {
+
+    const pesan =
+        document.getElementById("pesan");
+
+
+    // Belum memilih semua benda
+
+    if (pilihan.length !== 4) {
+
+        pesan.innerText =
+            "Ayo pilih semua benda terlebih dahulu! 😊";
+
+        pesan.className =
+            "pesan salah";
+
+        return;
+
+    }
+
+
+    const soalSekarang =
+        kumpulanSoal[nomorSoal];
+
+
+    // ==============================================
+    // MEMBUAT URUTAN JAWABAN BENAR
+    // ==============================================
+
+    let jawabanBenar =
+        [...soalSekarang.benda];
+
+
+    if (soalSekarang.arah === "kecil") {
+
+        jawabanBenar.sort(
+            (a, b) => a.nilai - b.nilai
+        );
+
+    } else {
+
+        jawabanBenar.sort(
+            (a, b) => b.nilai - a.nilai
+        );
+
+    }
+
+
+    // ==============================================
+    // MEMBANDINGKAN JAWABAN
+    // ==============================================
+
+    let benar = true;
+
+
+    for (
+        let i = 0;
+        i < pilihan.length;
+        i++
+    ) {
+
+        if (
+            pilihan[i].nilai !==
+            jawabanBenar[i].nilai
+        ) {
+
+            benar = false;
+
+            break;
+
+        }
+
+    }
+
+
+    // ==============================================
+    // JAWABAN BENAR
+    // ==============================================
+
+    if (benar) {
+
+        // Tambah skor hanya satu kali
+
+        if (!sudahDijawabBenar) {
+
+            skor += 20;
+
+            document.getElementById("skor")
+                .innerText = skor;
+
+            sudahDijawabBenar = true;
+
+        }
+
+
+        pesan.innerText =
+            "🎉 Hebat! Urutanmu benar!";
+
+        pesan.className =
+            "pesan benar";
+
+
+        // Sembunyikan tombol periksa
+
+        document.getElementById("cekBtn")
+            .style.display = "none";
+
+
+        // Tampilkan soal berikutnya
+
+        if (nomorSoal <
+            kumpulanSoal.length - 1) {
+
+            document.getElementById("nextBtn")
+                .style.display = "inline-block";
+
+        } else {
+
+            // Jika soal terakhir
+
+            document.getElementById("hasil")
+                .innerText =
+                "🎊 Permainan selesai! Skormu " +
+                skor +
+                " dari 100.";
+
+        }
+
+    }
+
+
+    // ==============================================
+    // JAWABAN SALAH
+    // ==============================================
+
+    else {
+
+        pesan.innerText =
+            "😄 Belum tepat. Coba lagi!";
+
+        pesan.className =
+            "pesan salah";
+
+
+        // Sembunyikan tombol periksa
+
+        document.getElementById("cekBtn")
+            .style.display = "none";
+
+
+        // Tampilkan tombol ulangi
+
+        document.getElementById("ulangBtn")
+            .style.display = "inline-block";
+
+    }
+
+}
+
+
+// ==================================================
+// MENGULANGI PERTANYAAN YANG SAMA
+// ==================================================
+
+function ulangPertanyaan() {
+
+    // Tidak menambah atau mengurangi skor
+
+    pilihan = [];
+
+
+    // Tampilkan kembali benda yang sama
+    // dengan urutan acak
+
+    tampilkanSoal();
+
+}
+
+
+// ==================================================
+// SOAL BERIKUTNYA
+// ==================================================
+
+function soalBerikutnya() {
+
+    if (
+        nomorSoal <
+        kumpulanSoal.length - 1
+    ) {
+
+        nomorSoal++;
+
+        tampilkanSoal();
+
+    }
+
+}
+
+
+// ==================================================
+// MULAI GAME
+// ==================================================
+
+tampilkanSoal();
+
+</script>
+
+</body>
+</html>
